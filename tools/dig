@@ -1,0 +1,13 @@
+#!/bin/sh
+
+##### Constants
+MACHINE_NAME=private-cloud
+
+MACHINE_ON=$(docker-machine ls | grep $MACHINE_NAME)
+if [[ "$MACHINE_ON" == *"Running"* ]]
+then
+	eval "$(docker-machine env $MACHINE_NAME)"
+	DNS_HOST_IP="$(docker-machine ip $MACHINE_NAME)"
+fi
+
+docker run --rm --net=host tutum/dnsutils dig $1

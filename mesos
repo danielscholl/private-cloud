@@ -1,0 +1,107 @@
+#!/bin/bash
+#set -o errexit -o pipefail
+
+ENV_SETUP="env.sh"
+source "$ENV_SETUP"
+
+
+##### Constants
+MACHINE_NAME=private-cloud
+MASTER_HOST=${MACHINE_NAME//[-]/}_master_1
+SLAVE_HOST=${MACHINE_NAME//[-]/}_slave_1
+DNS_HOST=${MACHINE_NAME//[-]/}_dns_1
+
+
+##### Functions
+
+function show_help
+{
+	echo "Command line Options"
+	echo "   create"
+	echo "   start"
+	echo "   stop"
+	echo "   destroy"
+}
+
+function create
+{
+	docker-machine create \
+		   --driver virtualbox \
+		   $MACHINE_NAME
+
+	if [[ ${DOCKER_USER} && ${DOCKER_PWD} && ${DOCKER_EMAIL} ]]
+	then
+		echo 'Logging in to Repositories'
+		eval docker-machine ssh $MACHINE_NAME 'docker login -u $DOCKER_USER -p $DOCKER_PWD -e $DOCKER_EMAIL ' >/dev/null 2>&1
+		eval docker-machine ssh $MACHINE_NAME 'tar czf docker.tar.gz .docker' >/dev/null 2>&1
+
+	fi
+
+	HOST_IP=$(docker-machine ip $MACHINE_NAME)
+
+	echo ${HOST_IP} zk master slave marathon dns | docker-machine ssh $MACHINE_NAME sudo tee -a /etc/hosts
+	eval $(docker-machine ssh $MACHINE_NAME "sudo sed -i '1s/^/nameserver ${HOST_IP}\n /' /etc/resolv.conf")
+}
+
+function start
+{
+	eval "$(docker-machine env $MACHINE_NAME)"
+	eval docker-machine scp -r ./scripts $MACHINE_NAME:~ >/dev/null 2>&1
+	eval docker-machine scp ./dnsconfig.json $MACHINE_NAME:~/dnsconfig.json >/dev/null 2>&1
+
+	HOSTIP="$(docker-machine ip $MACHINE_NAME)" docker-compose -f docker-compose.yml up -d
+}
+
+
+
+function stop
+{
+	eval "$(docker-machine env $MACHINE_NAME)"
+	HOSTIP=${docker-machine ip $MACHINE_NAME} docker-compose kill
+	HOSTIP=${docker-machine ip $MACHINE_NAME} docker-compose rm -f
+
+	if [[  "$(docker-machine ssh ${MACHINE_NAME} 'ls -l dnsconfig.json ' >/dev/null 2>&1)" ]]
+	then
+		$(docker-machine ssh $MACHINE_NAME 'rmdir dnsconfig.json')
+	fi
+	if [[  "$(docker-machine ssh ${MACHINE_NAME} 'ls -l docker.tar.gz' >/dev/null 2>&1)" ]]
+	then
+		eval "$(docker-machine ssh $MACHINE_NAME 'rmdir docker.tar.gz')"
+	fi
+	if [[ "$(docker ps -a -q -f status=exited)" ]]
+	then
+		docker rm -v $(docker ps -a -q -f status=exited)
+	fi
+
+}
+
+function destroy
+{
+	docker-machine rm $MACHINE_NAME
+}
+
+##### Main
+
+
+case "$1" in
+
+create)  echo "Creating $MACHINE_NAME"
+	create
+    ;;
+destroy)  echo  "Destroying $MACHINE_NAME"
+    destroy
+    ;;
+start) echo "Starting Mesosphere and Marathon"
+	start
+	;;
+stop) echo "Killing Mesosphere and Marathon"
+	stop
+	;;
+*)
+	echo "Command line Options"
+	echo "   create"
+	echo "   start"
+	echo "   stop"
+	echo "   destroy"
+;;
+esac

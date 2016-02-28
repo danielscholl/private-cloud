@@ -1,0 +1,27 @@
+#!/bin/sh
+
+#### Constants
+MACHINE_NAME=private-cloud
+REGISTRY=mongo
+VERSION=3.2.3
+DB_HOME=/usr
+
+MACHINE_ON=$(docker-machine ls | grep $MACHINE_NAME)
+if [[ "$MACHINE_ON" == *"Running"* ]]
+then
+	eval "$(docker-machine env $MACHINE_NAME)"
+fi
+
+
+#### Main
+
+until docker run \
+        --rm \
+        --net bridge \
+        --entrypoint $DB_HOME/bin/mongo \
+        -it ${REGISTRY}:${VERSION} \
+        --host $1
+do
+        echo "*** waiting another 10s for db to start,..."
+        sleep 10
+done

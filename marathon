@@ -1,0 +1,89 @@
+#!/bin/bash
+
+##### Constants
+MACHINE_NAME=private-cloud
+eval "$(docker-machine env $MACHINE_NAME)"
+HOSTIP=${DOCKER_HOST:6:14}:8080
+
+##### Functions
+function cleanup
+{
+    if [[ "$(docker ps -a -q -f status=exited)" ]]
+    then
+        echo 'Removing exited containers'
+        docker rm -v $(docker ps -a -q -f status=exited)
+    fi
+}
+
+
+##### Main
+case "$1" in
+    app)
+        echo GET http://$HOSTIP/v2/apps
+        curl -sX GET $HOSTIP/v2/apps | python -mjson.tool
+    ;;
+    app_add)
+        cleanup
+        echo POST http://$HOSTIP/v2/apps -d@${2}
+        curl -sX POST -H "Content-Type: application/json" $HOSTIP/v2/apps -d@${2} | python -mjson.tool
+    ;;
+    app_rm)
+        echo http://$HOSTIP/v2/apps/${2}
+        curl -sX DELETE $HOSTIP/v2/apps/${2} | python -mjson.tool
+        cleanup
+    ;;
+    group)
+        echo GET http://$HOSTIP/v2/groups
+        curl -sX GET $HOSTIP/v2/apps | python -mjson.tool
+    ;;
+    group_add)
+        cleanup
+        echo http://$HOSTIP/v2/groups -d@${2}
+        curl -sX POST -H "Content-Type: application/json" $HOSTIP/v2/groups -d@${2} | python -mjson.tool
+    ;;
+    group_rm)
+        echo http://$HOSTIP/v2/groups/${2}
+        curl -sX DELETE $HOSTIP/v2/groups/${2} | python -mjson.tool
+        cleanup
+    ;;
+    info)
+        echo GET http://$HOSTIP/v2/info
+        curl -sX GET $HOSTIP/v2/info | python -mjson.tool
+    ;;
+    status)
+        echo GET http://$HOSTIP/v2/apps/${2}
+        curl -sX GET $HOSTIP/v2/apps/${2} | python -mjson.tool
+    ;;
+    queue)
+        echo GET http://$HOSTIP/v2/queue
+        curl -sX GET $HOSTIP/v2/queue | python -mjson.tool
+    ;;
+    tasks)
+        echo GET http://$HOSTIP/v2/tasks
+        curl -sX GET $HOSTIP/v2/tasks
+    ;;
+    kill)
+        echo POST http://$HOSTIP/v2/tasks/delete
+        curl -sX POST -d${2} $HOSTIP/v2/tasks/delete | python -mjson.tool
+    ;;
+    deployments)
+        echo GET http://$HOSTIP/v2/deployments
+        curl -v -sX GET $HOSTIP/v2/deployments | python -mjson.tool
+    ;;
+    *)
+        echo "Usage: deploy.sh <command>"
+        echo "For example,"
+        echo " ./marathon app                # list applications"
+        echo " ./marathon app_add [json]     # install an application"
+        echo " ./marathon app_rm [app-id]    # uninstall an application"
+        echo " ./marathon group              # list groups"
+        echo " ./marathon group_add [json]   # install a group"
+        echo " ./marathon degroup [app-id]   # uninstall a group"
+        echo " ./marathon status [app-id]    # show the application"
+        echo " ./marathon info               # show the marathon info"
+        echo " ./marathon queue              # show the task queue"
+        echo " ./marathon tasks              # show running tasks"
+        echo " ./marathon tasks [task-id]    # kill a running tasks"
+        echo " ./marathon deployments        # show running deployments"
+    ;;
+esac

@@ -1,0 +1,28 @@
+#!/bin/sh
+
+#### Constants
+MACHINE_NAME=private-cloud
+REGISTRY=cassandra
+VERSION=3.3
+DB_HOME=/usr
+
+
+MACHINE_ON=$(docker-machine ls | grep $MACHINE_NAME)
+if [[ "$MACHINE_ON" == *"Running"* ]]
+then
+	eval "$(docker-machine env $MACHINE_NAME)"
+fi
+
+
+#### Main
+
+until docker run \
+        --rm \
+        --net host \
+        --entrypoint $DB_HOME/bin/cqlsh \
+        -it ${REGISTRY}:${VERSION} \
+        $1 $2
+do
+        echo "*** waiting another 10s for db to start,..."
+        sleep 10
+done

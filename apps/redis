@@ -1,0 +1,24 @@
+{
+  "id": "redis",
+  "mem": 256,
+  "cpus": 0.25,
+  "instances": 1,
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "redis:3.0.7-alpine",
+      "network": "BRIDGE",
+      "portMappings": [
+        {
+          "containerPort": 6379,
+          "hostPort": 6379,
+          "servicePort": 0,
+          "protocol": "tcp"
+        }
+      ]
+    }
+  },
+  "env": {
+  },
+  "uris": []
+}

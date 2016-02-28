@@ -1,0 +1,82 @@
+{
+  "id": "/app",
+  "groups": [
+    {
+      "id": "/app/dbas",
+      "dependencies": [ ],
+      "apps": [
+        {
+          "id": "/app/dbas/redis",
+          "mem": 128,
+          "cpus": 0.1,
+          "instances": 1,
+          "container": {
+            "type": "DOCKER",
+            "docker": {
+              "image": "redis:3.0.7-alpine",
+              "network": "BRIDGE",
+              "portMappings": [
+                {
+                  "containerPort": 6379,
+                  "hostPort": 6379,
+                  "servicePort": 0,
+                  "protocol": "tcp"
+                }
+              ]
+            }
+          },
+          "env": { },
+          "uris": ["file:///docker.tar.gz"]
+        },
+        {
+          "id": "/app/dbas/cass",
+          "mem": 2048,
+          "cpus": 0.2,
+          "instances": 1,
+          "container": {
+            "type": "DOCKER",
+            "docker": {
+              "image": "cassandra:3.3",
+              "network": "BRIDGE",
+              "portMappings": [
+                {
+                  "containerPort": 9042,
+                  "hostPort": 9042,
+                  "servicePort": 0,
+                  "protocol": "tcp"
+                }
+              ]
+            }
+          },
+          "env": { },
+          "uris": ["file:///docker.tar.gz"]
+        },
+        {
+          "id": "/app/dbas/mongo",
+          "mem": 256,
+          "cpus": 0.25,
+          "instances": 1,
+          "command": "--smallfiles --rest",
+          "container": {
+            "type": "DOCKER",
+            "docker": {
+              "image": "mongo:3.2.3",
+              "network": "BRIDGE",
+              "portMappings": [
+                {
+                  "containerPort": 27017,
+                  "hostPort": 27017,
+                  "servicePort": 0,
+                  "protocol": "tcp"
+                }
+              ]
+            }
+          },
+          "env": {
+          },
+          "uris": []
+        }
+      ]
+    }
+  ]
+}
