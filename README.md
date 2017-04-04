@@ -19,7 +19,7 @@ The benefits of this is the developer now has direct access to the underlying do
 #### Clone down the project
 
 ```bash
-$ git clone https://github.com/degnome/private-cloud.git
+$ git clone https://github.com/danielscholl/private-cloud.git
 $ cd private-cloud
 ```
 
